@@ -6,6 +6,6 @@
   "version": "${version}",
   "mcversion": "${mcversion}",
   "updateUrl": "",
-  "authorList": ["Ineentho"],
+  "authorList": ["Ineentho"]
 }
 ]
