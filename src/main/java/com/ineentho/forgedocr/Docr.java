@@ -10,6 +10,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
+import org.lwjgl.input.Keyboard;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,7 +26,7 @@ public class Docr
     public void onPost(FMLPostInitializationEvent event) {
         addCheckerTask();
 
-        FMLCommonHandler.instance().bus().register(new DocrEvents());
+        MinecraftForge.EVENT_BUS.register(new DocrEvents());
     }
 
     /**
@@ -39,7 +40,8 @@ public class Docr
                     @Override
                     public void run() {
                         if (Minecraft.getMinecraft().currentScreen instanceof GuiMainMenu) {
-                            startWorld();
+                            if(!Keyboard.isKeyDown(Keyboard.KEY_SPACE))
+                                startWorld();
                         } else {
                             addCheckerTask();
                         }
