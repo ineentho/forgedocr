@@ -107,7 +107,7 @@ public class DocGenerator {
     private static int[] pixelValues = null;
 
     private static void renderItem(Item item, File file) throws LWJGLException {
-        int size = 1024;
+        int size = 256;
 
         GlStateManager.viewport(0, 0, size, size);
         GlStateManager.matrixMode(GL11.GL_PROJECTION);
