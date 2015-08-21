@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import org.lwjgl.LWJGLException;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 
@@ -42,12 +43,14 @@ public class Docr
                     @Override
                     public void run() {
                         if (Minecraft.getMinecraft().currentScreen instanceof GuiMainMenu) {
-                            try {
-                                Display.setDisplayMode(new DisplayMode(500, 500));
-                            } catch (LWJGLException e) {
-                                e.printStackTrace();
+                            if(!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
+                                try {
+                                    Display.setDisplayMode(new DisplayMode(1000, 1000));
+                                } catch (LWJGLException e) {
+                                    e.printStackTrace();
+                                }
+                                startWorld();
                             }
-                            startWorld();
                         } else {
                             addCheckerTask();
                         }

@@ -2,9 +2,13 @@ package com.ineentho.forgedocr.generator;
 
 import com.google.gson.Gson;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockFire;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -15,19 +19,26 @@ import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.*;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class DocGenerator {
+
+    private static int framebufferID;
+
     public static void generate() {
         Gson gson = new Gson();
+
+        framebufferID = EXTFramebufferObject.glGenFramebuffersEXT();
 
         List<DocBlock> docBlocks = new ArrayList<DocBlock>();
 
@@ -48,6 +59,9 @@ public class DocGenerator {
 
             docBlocks.add(docBlock);
 
+            if (block instanceof BlockFire)
+                continue;
+            System.out.println("Rendering block " + location.getResourcePath() + " " + block);
             renderBlock(block, new File("doc/blocks/" + docBlock.domain + "-" + docBlock.path + ".png"));
         }
 
@@ -55,6 +69,7 @@ public class DocGenerator {
             ResourceLocation location = (ResourceLocation) loc;
             Item item = GameData.getItemRegistry().getObject(location);
 
+            System.out.println("Rendering item " + location.getResourcePath() + " " + item);
             try {
                 renderItem(item, new File("doc/items/" + location.getResourceDomain() + "-" + location.getResourcePath() + ".png"));
             } catch (LWJGLException e) {
@@ -88,10 +103,11 @@ public class DocGenerator {
             }
         }
     }
+    private static IntBuffer pixelBuffer = null;
+    private static int[] pixelValues = null;
 
     private static void renderItem(Item item, File file) throws LWJGLException {
-
-        int size = 256;
+        int size = 1024;
 
         GlStateManager.viewport(0, 0, size, size);
         GlStateManager.matrixMode(GL11.GL_PROJECTION);
@@ -104,31 +120,51 @@ public class DocGenerator {
         GlStateManager.enableRescaleNormal();
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         //GuiContainerManager.drawItem(0, 0, new ItemStack(item));
-        GlStateManager.translate(0, 0, 0.0F);
-        Minecraft.getMinecraft().getRenderItem().renderItemAndEffectIntoGUI(new ItemStack(item), 0, 0);
+
+        GlStateManager.enableLighting();
+        GlStateManager.enableDepth();
+
+        try {
+            Minecraft.getMinecraft().getRenderItem().renderItemAndEffectIntoGUI(new ItemStack(item), 0, 0);
+        } catch (Exception e) {
+            System.out.println("Could not render " + item);
+            return;
+        }
 
 
+        Framebuffer fb = Minecraft.getMinecraft().getFramebuffer();
 
-        GL11.glReadBuffer(GL11.GL_FRONT_AND_BACK);
-        int bpp = 4; // Assuming a 32-bit display with a byte each for red, green, blue, and alpha.
-        ByteBuffer buffer = BufferUtils.createByteBuffer(size* size* bpp);
-        GL11.glReadPixels(0, 0, size, size, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+        int k = size * size ;
+        if (pixelBuffer == null || pixelBuffer.capacity() < k) {
+            pixelBuffer = BufferUtils.createIntBuffer(k);
+            pixelValues = new int[k];
+        }
 
+        GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+        pixelBuffer.clear();
 
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+       // if (OpenGlHelper.isFramebufferEnabled()) {
+        //    GlStateManager.bindTexture(fb.framebufferTexture);
+         //   GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, pixelBuffer);
+        //} else {
+            GL11.glReadPixels(0, 0, size , size , GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, pixelBuffer);
+        //}
 
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < size; y++) {
-                int i = (x + (size* y)) * bpp;
-                int r = buffer.get(i) & 0xFF;
-                int g = buffer.get(i + 1) & 0xFF;
-                int b = buffer.get(i + 2) & 0xFF;
-                image.setRGB(x, size - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
-            }
+        pixelBuffer.get(pixelValues);
+        TextureUtil.processPixelValues(pixelValues, size , size );
+
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        if (OpenGlHelper.isFramebufferEnabled()) {
+            for (int y = 0; y < size; ++y)
+                for (int x = 0; x < size; ++x)
+                    img.setRGB(x, y, pixelValues[y * size + x]);
+        } else {
+            img.setRGB(0, 0, size , size, pixelValues, 0, size );
         }
 
         try {
-            ImageIO.write(image, "PNG", file);
+            ImageIO.write(img, "PNG", file);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -13,7 +13,7 @@ public class DocrEvents {
     private boolean firstUpdate = true;
     @SubscribeEvent
     public void onLoaded(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && firstUpdate) {
+        if (event.phase == TickEvent.Phase.END && firstUpdate && Minecraft.getMinecraft().theWorld != null) {
             firstUpdate = false;
             DocGenerator.generate();
         }
