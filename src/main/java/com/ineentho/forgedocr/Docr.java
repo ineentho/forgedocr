@@ -10,6 +10,9 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
+import org.lwjgl.LWJGLException;
+import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,6 +42,11 @@ public class Docr
                     @Override
                     public void run() {
                         if (Minecraft.getMinecraft().currentScreen instanceof GuiMainMenu) {
+                            try {
+                                Display.setDisplayMode(new DisplayMode(500, 500));
+                            } catch (LWJGLException e) {
+                                e.printStackTrace();
+                            }
                             startWorld();
                         } else {
                             addCheckerTask();

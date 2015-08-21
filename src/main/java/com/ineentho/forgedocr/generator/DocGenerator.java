@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -34,6 +32,7 @@ public class DocGenerator {
         List<DocBlock> docBlocks = new ArrayList<DocBlock>();
 
         new File("doc/blocks").mkdirs();
+        new File("doc/items").mkdirs();
 
         Set items = GameData.getItemRegistry().getKeys();
         Set blocks = GameData.getBlockRegistry().getKeys();
@@ -50,6 +49,17 @@ public class DocGenerator {
             docBlocks.add(docBlock);
 
             renderBlock(block, new File("doc/blocks/" + docBlock.domain + "-" + docBlock.path + ".png"));
+        }
+
+        for (Object loc : blocks) {
+            ResourceLocation location = (ResourceLocation) loc;
+            Item item = GameData.getItemRegistry().getObject(location);
+
+            try {
+                renderItem(item, new File("doc/items/" + location.getResourceDomain() + "-" + location.getResourcePath() + ".png"));
+            } catch (LWJGLException e) {
+                e.printStackTrace();
+            }
         }
         PrintWriter out;
         try {
@@ -80,33 +90,40 @@ public class DocGenerator {
     }
 
     private static void renderItem(Item item, File file) throws LWJGLException {
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
-        GlStateManager.enableRescaleNormal();
+
+        int size = 256;
+
+        GlStateManager.viewport(0, 0, size, size);
+        GlStateManager.matrixMode(GL11.GL_PROJECTION);
+        GlStateManager.loadIdentity();
+        GlStateManager.ortho(0.0D, 16, 16, 0.0D, 1000.0D, 3000.0D);
+        GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+        GlStateManager.clearColor(0.0F, 0.0F, 0.0F, 0.0F);
+        GlStateManager.clear(16640);
         RenderHelper.enableGUIStandardItemLighting();
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.enableRescaleNormal();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        //GuiContainerManager.drawItem(0, 0, new ItemStack(item));
+        GlStateManager.translate(0, 0, 0.0F);
         Minecraft.getMinecraft().getRenderItem().renderItemAndEffectIntoGUI(new ItemStack(item), 0, 0);
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableRescaleNormal();
 
-        GL11.glReadBuffer(GL11.GL_FRONT);
-        int width = Display.getDisplayMode().getWidth();
-        int height = Display.getDisplayMode().getHeight();
+
+
+        GL11.glReadBuffer(GL11.GL_FRONT_AND_BACK);
         int bpp = 4; // Assuming a 32-bit display with a byte each for red, green, blue, and alpha.
-        ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * bpp);
-        GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+        ByteBuffer buffer = BufferUtils.createByteBuffer(size* size* bpp);
+        GL11.glReadPixels(0, 0, size, size, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
 
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
 
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                int i = (x + (width * y)) * bpp;
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < size; y++) {
+                int i = (x + (size* y)) * bpp;
                 int r = buffer.get(i) & 0xFF;
                 int g = buffer.get(i + 1) & 0xFF;
                 int b = buffer.get(i + 2) & 0xFF;
-                image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
+                image.setRGB(x, size - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
             }
         }
 
