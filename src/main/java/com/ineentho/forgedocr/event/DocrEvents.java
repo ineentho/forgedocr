@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.lwjgl.input.Keyboard;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -16,7 +17,8 @@ public class DocrEvents {
     public void renderOverlay(RenderGameOverlayEvent event) {
         if (firstUpdate) {
             firstUpdate = false;
-            DocGenerator.generate();
+            if(!Keyboard.isKeyDown(Keyboard.KEY_SPACE))
+                DocGenerator.generate();
         }
     }
 }

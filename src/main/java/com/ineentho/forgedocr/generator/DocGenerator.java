@@ -45,7 +45,6 @@ public class DocGenerator {
             ResourceLocation location = (ResourceLocation) loc;
             Block block = GameData.getBlockRegistry().getObject(location);
 
-
             DocBlock docBlock = new DocBlock();
             docBlock.domain = location.getResourceDomain();
             docBlock.path = location.getResourcePath();
