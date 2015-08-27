@@ -65,7 +65,7 @@ public class DocGenerator {
             renderBlock(block, new File("doc/blocks/" + docBlock.domain + "-" + docBlock.path + ".png"));
         }
 
-        for (Object loc : blocks) {
+        for (Object loc : items) {
             ResourceLocation location = (ResourceLocation) loc;
             Item item = GameData.getItemRegistry().getObject(location);
 
