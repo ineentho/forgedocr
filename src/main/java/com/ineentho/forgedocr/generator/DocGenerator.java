@@ -36,19 +36,37 @@ public class DocGenerator {
     private static int framebufferID;
 
     public static void generate() {
+        renderAll(16);
+        renderAll(32);
+        renderAll(64);
+        renderAll(128);
+        renderAll(256);
+        renderAll(512);
+
+        FMLCommonHandler.instance().exitJava(0, false);
+    }
+
+    public static void renderAll(int size) {
         Gson gson = new Gson();
 
         framebufferID = EXTFramebufferObject.glGenFramebuffersEXT();
 
         List<DocBlock> docBlocks = new ArrayList<DocBlock>();
 
-        new File("doc/blocks").mkdirs();
-        new File("doc/items").mkdirs();
+        new File("doc/" + size + "/blocks").mkdirs();
+        new File("doc/" + size + "/items").mkdirs();
 
         Set items = GameData.getItemRegistry().getKeys();
         Set blocks = GameData.getBlockRegistry().getKeys();
 
+
+        int total = blocks.size() + items.size();
+        int n = 0;
+
+
         for (Object loc : blocks) {
+            n++;
+
             ResourceLocation location = (ResourceLocation) loc;
             Block block = GameData.getBlockRegistry().getObject(location);
 
@@ -61,22 +79,24 @@ public class DocGenerator {
 
             if (block instanceof BlockFire)
                 continue;
-            System.out.println("Rendering block " + location.getResourcePath() + " " + block);
-            renderBlock(block, new File("doc/blocks/" + docBlock.domain + "-" + docBlock.path + ".png"));
+            System.out.println("Rendering block " + size + "px (" + n +  "/" + total +")" + location.getResourcePath() + " " + block);
+            renderBlock(block, new File("doc/" + size + "/blocks/" + docBlock.domain + "-" + docBlock.path + ".png"), size);
         }
 
+
         for (Object loc : items) {
+            n++;
             ResourceLocation location = (ResourceLocation) loc;
             Item item = GameData.getItemRegistry().getObject(location);
 
-            System.out.println("Rendering item " + location.getResourcePath() + " " + item);
+            System.out.println("Rendering item " + size + "px (" + n +  "/" + total +")" + location.getResourcePath() + " " + item);
             try {
-                renderItem(item, new File("doc/items/" + location.getResourceDomain() + "-" + location.getResourcePath() + ".png"));
+                renderItem(item, new File("doc/" + size + "/items/" + location.getResourceDomain() + "-" + location.getResourcePath() + ".png"), size);
             } catch (LWJGLException e) {
                 e.printStackTrace();
             }
         }
-        PrintWriter out;
+     /*   PrintWriter out;
         try {
             out = new PrintWriter("doc/blocks.json");
         } catch (FileNotFoundException e) {
@@ -87,17 +107,15 @@ public class DocGenerator {
 
 
         out.println(gson.toJson(docBlocks));
-        out.close();
-
-        FMLCommonHandler.instance().exitJava(0, false);
+        out.close();*/
     }
 
-    private static void renderBlock(Block block, File file) {
+    private static void renderBlock(Block block, File file, int size) {
         Item item = Item.getItemFromBlock(block);
 
         if (item != null) {
             try {
-                renderItem(item, file);
+                renderItem(item, file, size);
             } catch (LWJGLException e) {
                 e.printStackTrace();
             }
@@ -106,8 +124,7 @@ public class DocGenerator {
     private static IntBuffer pixelBuffer = null;
     private static int[] pixelValues = null;
 
-    private static void renderItem(Item item, File file) throws LWJGLException {
-        int size = 256;
+    private static void renderItem(Item item, File file, int size) throws LWJGLException {
 
         GlStateManager.viewport(0, 0, size, size);
         GlStateManager.matrixMode(GL11.GL_PROJECTION);
